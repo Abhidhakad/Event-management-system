@@ -1,55 +1,12 @@
 import User from "../models/userModel.js";
-import jwt from "jsonwebtoken";
-import joi from "joi";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { generateAccessAndRefreshTokens } from "../utils/token.js";
+import cookieOptions from "../config/cookieOptions.js";
 
 
-const cookieOptions = {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "Strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-}
-
-const generateAccessAndRefereshTokens = async (userid) => {
-    try {
-        const user = await User.findById(userid);
-        const accessToken = user.generateAccessToken();
-        const refreshToken = user.generateRefreshToken();
-
-        user.refreshToken = refreshToken
-        await user.save({ validateBeforeSave: false })
-
-        return { accessToken, refreshToken }
-
-    } catch (error) {
-        throw new Error("Failed to generate token: ", error);
-    }
-}
 
 
-const registerSchema = joi.object({
-    name: joi.string().min(3).max(50).required(),
-    email: joi.string().email().required(),
-    password: joi.string()
-        .min(6)
-        .max(128)
-        .pattern(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[!@#$%^&*])"))
-        .required()
-        .messages({
-            "string.pattern.base":
-                "Password must include uppercase, lowercase, number, and special character",
-        }),
-    role: joi.string().valid("user", "admin", "organizer").default("user"),
-});
-
-const loginSchema = joi.object({
-    email: joi.string().email().required(),
-    password: joi.string().required(),
-});
-
-
-// register new user
 
 export const registerUser = async (req, res) => {
     try {
@@ -58,17 +15,20 @@ export const registerUser = async (req, res) => {
             const errors = error.details.map((detail) => detail.message);
             return res.status(400).json({ errors });
         }
-        const { name, email, password } = value;
+
+        const { name, email, password, role } = value;
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({ error: "User already registered" });
         }
-        const user = await User.create({ name, email, password: hashedPassword, role });
 
-        if (!user) { return res.status(500).json({ error: "Internal server error" }) }
+        const user = await User.create({ name, email, password, role });
+        if (!user) {
+            return res.status(500).json({ error: "Internal server error" });
+        }
 
-        const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(user._id)
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
         return res
             .status(201)
@@ -80,39 +40,38 @@ export const registerUser = async (req, res) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    accessToken,
                 },
-                message: "User registered successfully."
-            })
-
+                accessToken,
+                message: "User registered successfully.",
+            });
+    } catch (error) {
+        console.error("Error in registerUser:", error.message);
+        res.status(500).json({ error: "Internal server error" });
     }
-    catch (error) {
-        console.log(error);
-    }
-}
-
-
+};
 
 export const loginUser = async (req, res) => {
     try {
-        const { error, value } = loginSchema.validate(req.body);
-        if (error) return res.status(400).json({ message: "Invalid credentials" });
+        const { error, value } = loginSchema.validate(req.body, { abortEarly: false });
+        if (error) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
 
         const { email, password } = value;
-
         const user = await User.findOne({ email });
-        if (!user) return res.status(400).json({ message: "Invalid credentials" });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid credentials" });
+        }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        const accessToken = generateAccessToken(user);
-        const refreshToken = generateRefreshToken(user);
+        const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
 
         return res
-            .status(201)
+            .status(200)
             .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
             .json({
@@ -121,15 +80,79 @@ export const loginUser = async (req, res) => {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    accessToken,
                 },
-                message: "User loggedIn successfully."
-            })
+                accessToken,
+                message: "User logged in successfully.",
+            });
+    } catch (error) {
+        console.error("Error in loginUser:", error.message);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
 
+export const refreshAccessToken = async (req, res) => {
+    try {
+        const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+        if (!incomingRefreshToken) {
+            return res.status(401).json({ message: "Unauthorized - No refresh token provided" });
+        }
+
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
+        )
+
+        const user = await User.findById(decodedToken?._id);
+
+        if (!user) {
+            return res.status(404).json({ message: "Invalid refresh token" });
+        }
+
+        if (user.refreshToken !== incomingRefreshToken) {
+            return res.status(403).json({ message: "Invalid refresh token" });
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+        return res
+            .status(200)
+            .cookie("accessToken", accessToken, cookieOptions)
+            .cookie("refreshToken", newRefreshToken, cookieOptions)
+            .json({
+                accessToken,
+                message: "Access token refreshed successfully.",
+            });
 
 
     } catch (error) {
-        console.error(err);
-        res.status(500).json({ message: "Internal Server Error" });
+        console.error("Error in refreshAccessToken:", error.message);
+        return res.status(401).json({ message: "Invalid or expired refresh token" });
     }
 }
+
+
+export const logout = async (req, res) => {
+    try {
+        const incomingRefreshToken = req.cookies?.refreshToken;
+
+        if (!incomingRefreshToken) {
+            return res.status(400).json({ message: "No refresh token provided" });
+        }
+        const user = await User.findOne({ refreshToken: incomingRefreshToken });
+
+        if (user) {
+            user.refreshToken = null;
+            await user.save({ validateBeforeSave: false });
+        }
+        return res
+            .status(200)
+            .clearCookie("accessToken", cookieOptions)
+            .clearCookie("refreshToken", cookieOptions)
+            .json({ message: "Logged out successfully" });
+
+    } catch (error) {
+        console.error("Error in logoutUser:", error.message);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+} 
