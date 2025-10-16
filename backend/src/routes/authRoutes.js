@@ -1,17 +1,14 @@
 import express from "express";
-import { loginUser, logout, refreshAccessToken, registerUser, } from "../controllers/authController.js";
+import { loginUser, logoutUser, refreshAccessToken, registerUser, } from "../controllers/authController.js";
 import { verifyJWT } from "../middlewares/authMiddleware.js";
 
 const authRouter = express.Router();
 
 
 authRouter.post("/register",registerUser);
-
 authRouter.post("/login", loginUser);
-
 // authRouter.post("/refresh-token",refreshAccessToken);
-
-authRouter.post("/logout", verifyJWT, logout);
+authRouter.post("/logout", verifyJWT, logoutUser);
 
 // // authRouter.get("/profile", authMiddleware, getProfile);
 

@@ -11,10 +11,9 @@ export const verifyJWT = async (req, res, next) => {
             return res.status(401).json({ message: "Unauthorized - No token provided" });
         }
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-
-        const user = await User.findById(decoded.id).select("-password");
+        const user = await User.findById(decoded._id).select("-password");
         if (!user) {
-            return res.status(401).json({ message: "Unauthorized - User not found" });
+            return res.status(401).json({ message: "Unauthorized - User not found",success:false });
         }
         req.user = user;
         next();
@@ -42,8 +41,8 @@ export const authorize = (...roles) => {
                     message: "Unauthorized: No user information found. Please login again.",
                 });
             }
-
-            if (!allowedRoles.includes(req.user.role)) {
+            
+            if (!roles.includes(req.user?.role)) {
                 console.log(
                     `Access denied for user ${req.user._id} with role ${req.user.role}`
                 );

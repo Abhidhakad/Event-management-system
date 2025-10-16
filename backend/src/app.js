@@ -15,10 +15,11 @@ app.use(cookieParser());
 
 // import routes
 import authRoutes from "./routes/authRoutes.js";
-
+import eventRoutes from './routes/eventRoutes.js';
 
 // Routes
 app.use('/api/v1/auth', authRoutes);
+app.use("/api/v1/events",eventRoutes);
 app.get('/', (req, res) => res.send('Backend is running'));
 
 export default app;

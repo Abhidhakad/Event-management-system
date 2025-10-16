@@ -134,7 +134,7 @@ export const refreshAccessToken = async (req, res) => {
 }
 
 
-const logoutUser = async (req, res) => {
+export const logoutUser = async (req, res) => {
     try {
         await User.findByIdAndUpdate(
             req.user._id,

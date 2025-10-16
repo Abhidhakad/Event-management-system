@@ -26,21 +26,23 @@ const eventSchema = new mongoose.Schema(
                 message: "Event date must be in the future",
             },
         },
-
-        category: {
-            type: String,
-            enum: ["Conference", "Workshop", "Concert", "Webinar", "Meetup", "Party", "Other"],
-            default: "Other",
-        },
         location: {
             type: String,
             required: [true, "Location is required"],
             trim: true,
         },
-        seats: {
+        totalSeats: {
             type: Number,
             required: [true, "Seats are required"],
             min: [1, "At least one seat is required"],
+        },
+        seatsAvailable: {
+            type: Number,
+            required: true,
+            min: [0, "Seats available cannot be negative"],
+            default: function () {
+                return this.totalSeats;
+            },
         },
         organizer: {
             type: mongoose.Schema.Types.ObjectId,
