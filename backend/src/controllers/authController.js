@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { generateAccessAndRefreshTokens } from "../utils/token.js";
 import cookieOptions from "../config/cookieOptions.js";
-
+import { registerSchema, loginSchema } from "../validators/authValidation.js"
 
 
 
@@ -20,12 +20,12 @@ export const registerUser = async (req, res) => {
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
-            return res.status(409).json({ error: "User already registered" });
+            return res.status(409).json({ error: "User already registered", success: false });
         }
 
         const user = await User.create({ name, email, password, role });
         if (!user) {
-            return res.status(500).json({ error: "Internal server error" });
+            return res.status(500).json({ error: "Internal server error", success: false });
         }
 
         const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
@@ -36,17 +36,18 @@ export const registerUser = async (req, res) => {
             .cookie("refreshToken", refreshToken, cookieOptions)
             .json({
                 user: {
-                    id: user._id,
+                    _id: user._id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
                 },
                 accessToken,
                 message: "User registered successfully.",
+                success: true,
             });
     } catch (error) {
         console.error("Error in registerUser:", error.message);
-        res.status(500).json({ error: "Internal server error" });
+        res.status(500).json({ error: "Internal server error", success: false });
     }
 };
 
@@ -54,18 +55,18 @@ export const loginUser = async (req, res) => {
     try {
         const { error, value } = loginSchema.validate(req.body, { abortEarly: false });
         if (error) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid credentials", success: false });
         }
 
         const { email, password } = value;
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid credentials", success: false });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         if (!isPasswordValid) {
-            return res.status(400).json({ message: "Invalid credentials" });
+            return res.status(400).json({ message: "Invalid credentials", success: false });
         }
 
         const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
@@ -83,10 +84,11 @@ export const loginUser = async (req, res) => {
                 },
                 accessToken,
                 message: "User logged in successfully.",
+                success: true,
             });
     } catch (error) {
         console.error("Error in loginUser:", error.message);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Internal server error", success: false });
     }
 };
 
@@ -132,27 +134,26 @@ export const refreshAccessToken = async (req, res) => {
 }
 
 
-export const logout = async (req, res) => {
+const logoutUser = async (req, res) => {
     try {
-        const incomingRefreshToken = req.cookies?.refreshToken;
+        await User.findByIdAndUpdate(
+            req.user._id,
+            {
+                $set: {
+                    refreshToken: '',
+                },
+            },
+            { new: true }
+        );
 
-        if (!incomingRefreshToken) {
-            return res.status(400).json({ message: "No refresh token provided" });
-        }
-        const user = await User.findOne({ refreshToken: incomingRefreshToken });
-
-        if (user) {
-            user.refreshToken = null;
-            await user.save({ validateBeforeSave: false });
-        }
         return res
             .status(200)
             .clearCookie("accessToken", cookieOptions)
             .clearCookie("refreshToken", cookieOptions)
-            .json({ message: "Logged out successfully" });
-
-    } catch (error) {
-        console.error("Error in logoutUser:", error.message);
-        res.status(500).json({ message: "Internal Server Error" });
+            .json({ message: "Logged out successfully", success: true });
     }
-} 
+    catch (error) {
+        console.error("Error in logoutUser:", error.message);
+        res.status(500).json({ message: "Internal Server Error", success: false });
+    }
+}

@@ -12,7 +12,7 @@ const registerSchema = Joi.object({
       "string.pattern.base":
         "Password must include uppercase, lowercase, number, and special character",
     }),
-  role: Joi.string().valid("user", "admin", "organizer").default("user"),
+  role: Joi.string().trim().lowercase().valid("user", "admin", "organizer").default("user"),
 });
 
 const loginSchema = Joi.object({

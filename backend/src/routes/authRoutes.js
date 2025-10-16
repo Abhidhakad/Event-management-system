@@ -1,21 +1,23 @@
 import express from "express";
-import { loginUser, logout, refreshAccessToken, registerUser, } from "../controllers/authController";
-import { verifyJWT } from "../middlewares/authMiddleware";
-const router = express.Router();
+import { loginUser, logout, refreshAccessToken, registerUser, } from "../controllers/authController.js";
+import { verifyJWT } from "../middlewares/authMiddleware.js";
+
+const authRouter = express.Router();
 
 
-router.post("/register",registerUser);
+authRouter.post("/register",registerUser);
 
-router.post("/login", loginUser);
+authRouter.post("/login", loginUser);
 
-router.post("refresh-token",refreshAccessToken);
+// authRouter.post("/refresh-token",refreshAccessToken);
 
-router.post("/logout", verifyJWT, logout);
+authRouter.post("/logout", verifyJWT, logout);
 
-// router.get("/profile", authMiddleware, getProfile);
+// // authRouter.get("/profile", authMiddleware, getProfile);
 
-// router.get("/admin", authMiddleware, isAdmin, (req, res) => {
-//   res.status(200).json({ message: "Welcome Admin!" });
-// });
+// // authRouter.get("/admin", authMiddleware, isAdmin, (req, res) => {
+// //   res.status(200).json({ message: "Welcome Admin!" });
+// // });
 
-export default router;
+export default authRouter;
+

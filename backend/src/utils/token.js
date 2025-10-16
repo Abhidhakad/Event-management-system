@@ -1,6 +1,6 @@
-import User from "../models/userModel";
+import User from "../models/userModel.js";
 
-export const generateAccessAndRefereshTokens = async (userid) => {
+export const generateAccessAndRefreshTokens = async (userid) => {
     try {
         const user = await User.findById(userid);
         const accessToken = user.generateAccessToken();
