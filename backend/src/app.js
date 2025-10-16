@@ -1,15 +1,25 @@
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
+import cookieParser from "cookie-parser";
 
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
-// Routes placeholders
-app.get('/', (req, res) => {
-  res.send('Backend is running');
-});
 
-module.exports = app;
+// import routes
+import authRoutes from "./routes/authRoutes.js";
+import eventRoutes from './routes/eventRoutes.js';
+
+// Routes
+app.use('/api/v1/auth', authRoutes);
+app.use("/api/v1/events",eventRoutes);
+app.get('/', (req, res) => res.send('Backend is running'));
+
+export default app;
