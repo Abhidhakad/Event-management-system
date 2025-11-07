@@ -13,7 +13,7 @@ export const registerUser = async (req, res) => {
         const { error, value } = registerSchema.validate(req.body, { abortEarly: false });
         if (error) {
             const errors = error.details.map((detail) => detail.message);
-            return res.status(400).json({ errors });
+            return res.status(400).json({ error: errors, success: false });
         }
 
         const { name, email, password, role } = value;
@@ -32,7 +32,6 @@ export const registerUser = async (req, res) => {
 
         return res
             .status(201)
-            .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
             .json({
                 user: {
@@ -73,7 +72,6 @@ export const loginUser = async (req, res) => {
 
         return res
             .status(200)
-            .cookie("accessToken", accessToken, cookieOptions)
             .cookie("refreshToken", refreshToken, cookieOptions)
             .json({
                 user: {
@@ -94,44 +92,108 @@ export const loginUser = async (req, res) => {
 
 export const refreshAccessToken = async (req, res) => {
     try {
+
         const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
+
+        
         if (!incomingRefreshToken) {
-            return res.status(401).json({ message: "Unauthorized - No refresh token provided" });
+            return res.status(401).json({ message: "Unauthorized: No refresh token provided" });
         }
 
-        const decodedToken = jwt.verify(
-            incomingRefreshToken,
-            process.env.REFRESH_TOKEN_SECRET
-        )
+        let decodedToken;
+        try {
+            decodedToken = jwt.verify(incomingRefreshToken, process.env.REFRESH_TOKEN_SECRET);
+        } catch (err) {
+            return res.status(401).json({ message: "Unauthorized: Invalid or expired refresh token" });
+        }
 
-        const user = await User.findById(decodedToken?._id);
 
+        const user = await User.findById(decodedToken._id);
         if (!user) {
-            return res.status(404).json({ message: "Invalid refresh token" });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        if (user.refreshToken !== incomingRefreshToken) {
-            return res.status(403).json({ message: "Invalid refresh token" });
+        if (user?.refreshToken !== incomingRefreshToken) {
+            return res.status(403).json({ message: "Forbidden: Refresh token does not match" });
         }
 
         const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-        return res
-            .status(200)
-            .cookie("accessToken", accessToken, cookieOptions)
+        user.refreshToken = newRefreshToken;
+        await user.save();
+        res
             .cookie("refreshToken", newRefreshToken, cookieOptions)
+            .status(200)
             .json({
                 accessToken,
-                message: "Access token refreshed successfully.",
+                message: "Access token refreshed successfully",
             });
 
-
     } catch (error) {
-        console.error("Error in refreshAccessToken:", error.message);
-        return res.status(401).json({ message: "Invalid or expired refresh token" });
+        console.error("Error in refreshAccessToken:", error);
+        res.status(500).json({ message: "Internal Server Error" });
     }
-}
+};
+
+
+export const getAllUsers = async (req, res) => {
+  try {
+     const adminId = req.user.id;
+    const users = await User.find({ _id: { $ne: adminId } }).select("-password");
+    res.status(200).json(
+      users,
+    );
+  } catch (error) {
+    console.error("Error fetching all users:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error while fetching users.",
+    });
+  }
+};
+
+
+export const updateUserRole = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const { role } = req.body;
+
+    if (!role || !["user", "organizer", "admin"].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Must be 'user', 'organizer', or 'admin'.",
+      });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    user.role = role;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User role updated to '${role}'`,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  } catch (error) {
+    console.error("Error updating user role:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while updating user role",
+    });
+  }
+};
 
 
 export const logoutUser = async (req, res) => {
@@ -148,7 +210,6 @@ export const logoutUser = async (req, res) => {
 
         return res
             .status(200)
-            .clearCookie("accessToken", cookieOptions)
             .clearCookie("refreshToken", cookieOptions)
             .json({ message: "Logged out successfully", success: true });
     }

@@ -1,5 +1,5 @@
-import Booking from "../models/booking.model.js";
-import Event from "../models/event.model.js"; // assuming you have Event model
+import Booking from "../models/bookingModel.js";
+import Event from "../models/eventModel.js"; // assuming you have Event model
 import { v4 as uuidv4 } from "uuid";
 
 
@@ -25,15 +25,15 @@ export const getMyBookings = async (req, res) => {
 
 export const createBooking = async (req, res) => {
     try {
-        const { event_id, seats = 1 } = req.body;
+        const { eventId, seats = 1 } = req.body;
         const userId = req.user?._id;
 
-        if (!event_id) {
+        if (!eventId) {
             return res.status(400).json({ message: "Event ID is required" });
         }
 
      
-        const event = await Event.findById(event_id);
+        const event = await Event.findById(eventId);
         if (!event) {
             return res.status(404).json({ message: "Event not found" });
         }
@@ -50,7 +50,7 @@ export const createBooking = async (req, res) => {
 
         const booking = await Booking.create({
             user_id: userId,
-            event_id,
+            event_id:eventId,
             ticket_id,
             bookingDate: Date.now(),
         });
@@ -95,4 +95,24 @@ export const cancelBooking = async (req, res) => {
         console.error("Error cancelling booking:", error);
         res.status(500).json({ success: false, message: "Failed to cancel booking" });
     }
+};
+
+
+export const getAllBookings = async (req, res) => {
+  try {
+    const bookings = await Booking.find()
+      .populate("user_id", "name email") 
+      .populate("event_id", "title date")
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(
+      bookings,
+    );
+  } catch (error) {
+    console.error("Error fetching all bookings:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal Server Error while fetching bookings.",
+    });
+  }
 };

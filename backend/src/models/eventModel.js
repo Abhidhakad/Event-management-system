@@ -49,6 +49,16 @@ const eventSchema = new mongoose.Schema(
             ref: "User",
             required: [true, "Organizer is required"],
         },
+        imageUrl: {
+            type: String,
+            trim: true,
+        },
+        status: {
+            type: String,
+            enum: ["pending", "approved", "rejected"],
+            required: true,
+            default: "pending",
+        }
     },
     { timestamps: true }
 );

@@ -10,21 +10,25 @@ export const createEvent = async (req, res) => {
             return res.status(400).json({ success: false, errors });
         }
 
-        const { title, description, date, location, totalSeats } = value;
+        const { title, description, date, location, seats, imageUrl } = value;
+        console.log("seats: ",seats)
         const user = req.user;
         if (user.role !== "admin" && user.role !== "organizer") {
             return res.status(403).json({ success: false, message: "Unauthorized -you can not create events" });
         }
 
-
+        console.log("values is: ",value);
+        
         const event = await Event.create({
             title,
             description,
             date,
             location,
-            totalSeats,
-            seatsAvailable: totalSeats,
+            totalSeats:seats,
+            seatsAvailable: seats,
             organizer: user._id,
+            imageUrl,
+            status: 'pending',
         });
 
         res.status(201).json({
@@ -39,30 +43,37 @@ export const createEvent = async (req, res) => {
 };
 
 
-export const getAllEvents = async (req, res) => {
+export const getEventDetail = async (req, res) => {
   try {
+    const { id } = req.params;
 
-    const events = await Event.find()
-      .select("-__v")
-      .populate("organizer","name")
-      .sort({ date: 1 })
-      .lean();
-
-    if (!events || events.length === 0) {
-      return res.status(404).json({
+    if (!id || id.length !== 24) {
+      return res.status(400).json({
         success: false,
-        message: "No events available at the moment",
-        events: [],
+        message: "Invalid event ID format",
       });
     }
 
+    const event = await Event.findById(id)
+      .populate("organizer", "name email role")
+      .lean(); // returns plain JS object for performance
+
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    
     return res.status(200).json({
       success: true,
-      message: "Events fetched successfully",
-      events,
+      message: "Event fetched successfully",
+      event
     });
+
   } catch (error) {
-    console.error("Error fetching events:", error);
+    console.error(" Error fetching event:", error);
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -71,29 +82,34 @@ export const getAllEvents = async (req, res) => {
 };
 
 
-
 export const getAllEventsById = async (req, res) => {
-    try {
-        const organizerId = req.user?._id;
-        if (!organizerId) {
-            return res.status(401).json({ success: false, message: "Unauthorized" });
-        }
-        const events = await Event.find({ organizer: organizerId }).select("-__v").sort({ createdAt: -1 }).lean();
-
-
-        if (!events || events.length === 0) {
-            return res.status(404).json({ success: false, message: "No events created yet" });
-        }
-        return res.status(200).json({
-            success: true,
-            message: "Events successfully fetched",
-            events,
-        });
-    } catch (error) {
-        console.error("Error fetching events:", error);
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
+  try {
+    const organizerId = req.user?._id;
+    if (!organizerId) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
+
+    const events = await Event.find({ organizer: organizerId })
+      .select("-__v")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      message:
+        events.length > 0
+          ? "Events successfully fetched"
+          : "No events created yet",
+      data: events,
+    });
+  } catch (error) {
+    console.error("Error fetching events:", error.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
 };
+
 
 
 export const updateEvent = async (req, res) => {
@@ -186,3 +202,76 @@ export const deleteEvent = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 }
+
+
+
+
+// admin controllers
+
+
+
+export const getAllEvents = async (req, res) => {
+  try {
+
+    const events = await Event.find()
+      .select("-__v")
+      .populate("organizer","name")
+      .sort({ date: 1 })
+      .lean();
+
+    if (!events || events.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No events available at the moment",
+        events: [],
+      });
+    }
+
+    return res.status(200).json(
+      events,
+    );
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+export const updateEventStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be 'approved' or 'rejected'.",
+      });
+    }
+
+    const event = await Event.findById(id);
+    if (!event) {
+      return res.status(404).json({
+        success: false,
+        message: "Event not found",
+      });
+    }
+
+    event.status = status;
+    await event.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Event ${status} successfully`,
+      data: event,
+    });
+  } catch (error) {
+    console.error("Error updating event status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while updating event status",
+    });
+  }
+};

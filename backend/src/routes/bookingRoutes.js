@@ -1,15 +1,16 @@
 import express from "express";
-import { authorize } from "../middlewares/authMiddleware";
-import { getMyBookings,createBooking,cancelBooking } from "../controllers/bookingController";
+import { verifyJWT }  from "../middlewares/authMiddleware.js";
+import { createBooking } from "../controllers/bookingController.js";
 
 
 
 const router = express.Router();
 
 
-router.get("/my",authorize, getMyBookings);
+// router.get("/my",authorize, getMyBookings);
 
-router.post("/", requireAuth, createBooking);
-router.delete("/:id", requireAuth, cancelBooking);
+router.post("/", verifyJWT, createBooking);
+
+// router.delete("/:id", requireAuth, cancelBooking);
 
 export default router;

@@ -34,7 +34,7 @@ export const eventValidationSchema = Joi.object({
             "string.empty": "Location is required",
         }),
 
-    totalSeats: Joi.number()
+    seats: Joi.number()
         .integer()
         .min(1)
         .required()
@@ -43,6 +43,7 @@ export const eventValidationSchema = Joi.object({
             "number.min": "At least one seat is required",
             "any.required": "Seats are required",
         }),
+    imageUrl: Joi.string().uri().allow('').optional()
 });
 
 
