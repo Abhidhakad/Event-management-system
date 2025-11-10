@@ -3,8 +3,6 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-// import mongoSanitize from 'express-mongo-sanitize';
-// import xss from 'xss-clean';
 import authRoutes from './routes/authRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
@@ -45,8 +43,6 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
-
-
 
 
 export default app;
