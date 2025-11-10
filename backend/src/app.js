@@ -15,7 +15,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-console.log("cors_origin: ",process.env.CORS_ORIGIN);
+
+
+
 // Middlewares
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
@@ -43,5 +45,8 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal Server Error' });
 });
+
+
+
 
 export default app;

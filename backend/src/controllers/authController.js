@@ -96,7 +96,6 @@ export const refreshAccessToken = async (req, res) => {
         const incomingRefreshToken = req.cookies?.refreshToken || req.body.refreshToken;
 
 
-        
         if (!incomingRefreshToken) {
             return res.status(401).json({ message: "Unauthorized: No refresh token provided" });
         }
@@ -110,6 +109,10 @@ export const refreshAccessToken = async (req, res) => {
 
 
         const user = await User.findById(decodedToken._id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
@@ -137,62 +140,62 @@ export const refreshAccessToken = async (req, res) => {
 
 
 export const getAllUsers = async (req, res) => {
-  try {
-     const adminId = req.user.id;
-    const users = await User.find({ _id: { $ne: adminId } }).select("-password");
-    res.status(200).json(
-      users,
-    );
-  } catch (error) {
-    console.error("Error fetching all users:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Internal Server Error while fetching users.",
-    });
-  }
+    try {
+        const adminId = req.user.id;
+        const users = await User.find({ _id: { $ne: adminId } }).select("-password");
+        res.status(200).json(
+            users,
+        );
+    } catch (error) {
+        console.error("Error fetching all users:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Internal Server Error while fetching users.",
+        });
+    }
 };
 
 
 export const updateUserRole = async (req, res) => {
-  try {
-    const userId = req.params.id;
-    const { role } = req.body;
+    try {
+        const userId = req.params.id;
+        const { role } = req.body;
 
-    if (!role || !["user", "organizer", "admin"].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid role. Must be 'user', 'organizer', or 'admin'.",
-      });
+        if (!role || !["user", "organizer", "admin"].includes(role)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid role. Must be 'user', 'organizer', or 'admin'.",
+            });
+        }
+
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found",
+            });
+        }
+
+        user.role = role;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: `User role updated to '${role}'`,
+            data: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+            },
+        });
+    } catch (error) {
+        console.error("Error updating user role:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error while updating user role",
+        });
     }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    user.role = role;
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      message: `User role updated to '${role}'`,
-      data: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    console.error("Error updating user role:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while updating user role",
-    });
-  }
 };
 
 

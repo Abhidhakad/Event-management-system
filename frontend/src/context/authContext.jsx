@@ -46,7 +46,6 @@ export const AuthProvider = ({ children }) => {
         const token = await refreshAccessToken();
 
         if (token) {
-          // If refresh successful, get user data
           const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
             headers: { Authorization: `Bearer ${token}` },
             credentials: "include",
@@ -61,7 +60,7 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         console.error("Auth check failed:", err);
       } finally {
-        setIsLoading(false); // Always set loading to false
+        setIsLoading(false); 
       }
     };
 
@@ -69,15 +68,14 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
 
-  // Login
+ 
   const login = useCallback((userData) => {
     if (!userData) return;
-    console.log("Logging in user",userData);
     setUser(userData?.user);
     if (userData.accessToken) setAccessToken(userData.accessToken);
   }, []);
 
-  // Logout
+
   const logout = useCallback(async () => {
     try {
       console.log("Logging out...");
@@ -106,9 +104,9 @@ export const AuthProvider = ({ children }) => {
   const isOrganizer = user?.role === "organizer";
   const isAdmin = user?.role === "admin";
 
-  // Debug current state
+  
 
-  console.log("Auth State:", { user, accessToken, isLoading, isRefreshing });
+  // console.log("Auth State:", { user, accessToken, isLoading, isRefreshing });
 
   return (
     <AuthContext.Provider

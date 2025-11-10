@@ -13,7 +13,7 @@ import Home from "@/pages/Home.jsx";
 import EventDetail from "@/pages/EventDetail";
 import Login from "@/pages/Login.jsx";
 import Register from "@/pages/Register.jsx";
-// import Dashboard from "@/pages/Dashboard";
+import Dashboard from "@/pages/Dashboard";
 import OrganizerDashboard from "@/pages/OrganizerDashboard";
 import CreateEvent from "@/pages/CreateEvent";
 import AdminPanel from "@/pages/AdminPanel";
@@ -27,7 +27,7 @@ function Router() {
         <Route path="/events/:id" component={EventDetail} />
         <Route path="/login" component={Login} />
         <Route path="/register" component={Register} />
-        {/* <Route path="/dashboard" component={Dashboard} /> */}
+        <Route path="/dashboard" component={Dashboard} /> 
         <Route path="/organizer" component={OrganizerDashboard} />
         <Route path="/organizer/create" component={CreateEvent} />
          <Route path="/admin" component={AdminPanel} />

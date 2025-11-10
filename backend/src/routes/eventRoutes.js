@@ -1,8 +1,8 @@
 import express from "express";
 
-import { createEvent, deleteEvent, getEventDetail, getAllEvents, updateEvent,getAllEventsById } from "../controllers/eventController.js";
+import { createEvent, deleteEvent,searchEvent, getEventDetail,getApprovedEvents, updateEvent,getAllEventsById } from "../controllers/eventController.js";
 import { authorize, verifyJWT } from "../middlewares/authMiddleware.js";
-import { verifyAdmin } from "../middlewares/adminMiddleware.js";
+
 
 
 const eventRouter = express.Router();
@@ -16,7 +16,9 @@ eventRouter.delete("/:id",verifyJWT,authorize('organizer','admin'),deleteEvent);
 
 
 //public routes
-// eventRouter.get("/",getAllEvents);
+eventRouter.get('/search',searchEvent);
+eventRouter.get('/approved', getApprovedEvents);
 eventRouter.get("/:id",getEventDetail);
+
 
 export default eventRouter;

@@ -52,6 +52,7 @@ export const createBooking = async (req, res) => {
             user_id: userId,
             event_id:eventId,
             ticket_id,
+            seats,
             bookingDate: Date.now(),
         });
 

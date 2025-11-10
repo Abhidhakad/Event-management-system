@@ -20,6 +20,11 @@ const bookingSchema = new mongoose.Schema(
             unique: true,
             default: () => uuidv4()
         },
+        seats:{
+            type:Number,
+            required:[true,"Seats number is required"],
+            default:1,
+        },
         bookingDate: {
             type: Date,
             default: Date.now,

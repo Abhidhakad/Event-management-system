@@ -23,9 +23,6 @@ authRouter.get("/me", verifyJWT, (req, res) => {
 
 // // authRouter.get("/profile", authMiddleware, getProfile);
 
-// // authRouter.get("/admin", authMiddleware, isAdmin, (req, res) => {
-// //   res.status(200).json({ message: "Welcome Admin!" });
-// // });
 
 export default authRouter;
 
