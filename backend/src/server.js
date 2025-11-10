@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 import app from './app.js';
 import { connectDB } from './config/db.js';
 
-dotenv.config();
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config(); // only for local development
+}
 
 const PORT = process.env.PORT || 5000;
 
