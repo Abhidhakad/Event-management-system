@@ -1,4 +1,3 @@
-// src/components/Navbar.js
 import React from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";

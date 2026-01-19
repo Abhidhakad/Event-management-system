@@ -33,19 +33,19 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest('POST',
-        `${import.meta.env.VITE_API_URL}/auth/register`,
-        data);
 
-      const user = await response.json();
-      login(user?.user);
+      const res = await apiRequest("POST", "/auth/register", data);
+
+      const responseData = await res.json();
+
+      login(responseData);
 
       toast.success("Welcome to EventHub!", {
         description: "Your account has been created successfully.",
       });
 
       // Redirect based on role
-      navigate(user?.user.role === "organizer" ? "/organizer" : "/");
+      navigate(responseData?.user.role === "organizer" ? "/organizer" : "/");
     } catch (error) {
       toast.error("Registration Failed", {
         description:

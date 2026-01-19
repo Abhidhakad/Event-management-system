@@ -33,7 +33,7 @@ export default function Dashboard() {
           const data = await res.json();
           return data.data || [];
         },
-        staleTime: 1000 * 60 * 2,
+        staleTime: 1000 * 60 * 1,
         retry: 1,
         onError: (err) => {
           console.error("Bookings fateching failed:", err.message);

@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setAccessToken(null);
-      window.location.replace("/login");
+      window.location.replace("/");
       
     }
   }, [accessToken]);
@@ -129,9 +129,7 @@ export const AuthProvider = ({ children }) => {
       ) : (
         <div className="h-screen flex items-center justify-center">
           Loading...
-          <div className="ml-2 text-sm text-gray-500">
-            (Auth: {isLoading ? "checking" : "done"}, Refresh: {isRefreshing ? "yes" : "no"})
-          </div>
+          
         </div>
       )}
     </AuthContext.Provider>

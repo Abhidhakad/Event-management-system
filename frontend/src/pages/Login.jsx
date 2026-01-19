@@ -31,28 +31,22 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest('POST',
-              `${import.meta.env.VITE_API_URL}/auth/login`,
-              data);
+      const res = await apiRequest("POST", "/auth/login", data);
 
-      // if (!response.ok) {
-      //   const error = await response.json();
-      //   throw new Error(error.message || "Login failed");
-      // }
+      const responseData = await res.json();
 
-      const user = await response.json();
-      login(user);
-      toast("Welcome back!", {
+      login(responseData);
+      toast.success("Welcome back!", {
         description: "You have successfully logged in.",
       });
 
-      // Role-based navigation
+      
       const routes = {
         admin: "/admin",
         organizer: "/organizer",
         user: "/",
       };
-      navigate(routes[user?.user?.role] || "/");
+      navigate(routes[responseData?.user?.role] || "/");
     } catch (error) {
       console.log(error);
       toast.error("Login Failed", {

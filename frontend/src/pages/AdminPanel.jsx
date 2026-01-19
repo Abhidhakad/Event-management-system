@@ -149,7 +149,7 @@ export default function AdminPanel() {
         onError: () => toast.error('Delete Failed', { description: 'Unable to delete event.' }),
     });
 
-    // delete user
+  
 
     // DELETE User
     const deleteUserMutation = useMutation({
@@ -434,11 +434,11 @@ export default function AdminPanel() {
                                             <TableBody>
                                                 {bookings.map((booking) => (
                                                     <TableRow key={booking._id}>
-                                                        <TableCell className="font-medium">{booking.userName}</TableCell>
-                                                        <TableCell>{booking.eventTitle}</TableCell>
+                                                        <TableCell className="font-medium">{booking?.user_id?.name}</TableCell>
+                                                        <TableCell>{booking.event_id?.title}</TableCell>
                                                         <TableCell>
                                                             <code className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                                                                {booking.ticketId}
+                                                                {booking.ticket_id}
                                                             </code>
                                                         </TableCell>
                                                         <TableCell>{booking.seats}</TableCell>

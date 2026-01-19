@@ -22,9 +22,8 @@ async function throwIfResNotOk(res) {
   }
 }
 
-/**
- * Generic API Request helper for CRUD operations.
- * Handles base URL, JSON, and credentials automatically.
+/* Generic API Request helper for CRUD operations.
+   Handles base URL, JSON, and credentials automatically.
  */
 export async function apiRequest(method, url, data) {
   const base = import.meta.env.VITE_API_URL || "";
